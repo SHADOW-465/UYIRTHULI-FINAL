@@ -25,9 +25,20 @@ export default function SupabaseProvider({
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      // Only refresh on sign in/out events to avoid unnecessary redirects
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event, session?.user?.email)
+      
+      if (event === 'SIGNED_IN' && session) {
+        // User just signed in, redirect to dashboard
+        const redirectUrl = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || '/dashboard'
+        router.push(redirectUrl)
+        router.refresh()
+      } else if (event === 'SIGNED_OUT') {
+        // User signed out, redirect to login
+        router.push('/login')
+        router.refresh()
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        // Token refreshed, just refresh the page
         router.refresh()
       }
     })
