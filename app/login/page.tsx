@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { Loader2, LogIn, MoveRight, User, Eye, EyeOff, Chrome } from "lucide-react"
 import { motion } from "framer-motion"
@@ -86,20 +86,28 @@ const LoginButton: React.FC<LoginButtonProps> = ({ onClick, isLoading, label }) 
 export default function LoginPage() {
   const supabase = getSupabaseBrowserClient()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
 
-  // Check if user is already logged in
+  // Check for error parameters and existing session
   useEffect(() => {
     const checkSession = async () => {
       try {
+        // Check for error parameters from OAuth callback
+        const errorParam = searchParams.get('error')
+        if (errorParam === 'auth_failed') {
+          setError('Authentication failed. Please try again.')
+        }
+
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
           // User is already logged in, redirect to dashboard
-          window.location.href = "/dashboard"
+          const redirectUrl = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || "/dashboard"
+          window.location.href = redirectUrl
           return
         }
       } catch (error) {
@@ -110,7 +118,7 @@ export default function LoginPage() {
     }
     
     checkSession()
-  }, [supabase])
+  }, [supabase, searchParams])
 
   async function signInEmail(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault()
@@ -127,7 +135,8 @@ export default function LoginPage() {
       await new Promise(resolve => setTimeout(resolve, 100))
       
       // Use window.location.href for a hard redirect to ensure middleware picks up the session
-      window.location.href = "/dashboard"
+      const redirectUrl = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || "/dashboard"
+      window.location.href = redirectUrl
     } catch (e: any) {
       setError(e?.message || "Sign in failed")
       setLoading(false)
@@ -165,7 +174,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
+          redirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: "offline",
             prompt: "consent",
