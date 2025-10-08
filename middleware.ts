@@ -17,39 +17,58 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options })
+          // If the cookie is set, update the request cookies as well.
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          })
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
           })
-          response.cookies.set({ name, value, ...options })
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
         },
         remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: "", ...options })
+          // If the cookie is removed, update the request cookies as well.
+          request.cookies.set({
+            name,
+            value: "",
+            ...options,
+          })
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
           })
-          response.cookies.set({ name, value: "", ...options })
+          response.cookies.set({
+            name,
+            value: "",
+            ...options,
+          })
         },
       },
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  // This will refresh the session cookie if needed
+  const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
   const protectedRoutes = ["/dashboard", "/profile", "/settings", "/notifications"]
 
-  // Redirect to login if accessing protected routes without session
-  if (!session && protectedRoutes.some(route => pathname.startsWith(route))) {
+  // Redirect to login if accessing protected routes without a user
+  if (!user && protectedRoutes.some(route => pathname.startsWith(route))) {
     return NextResponse.redirect(new URL("/login", request.url))
   }
 
-  // Redirect authenticated users away from login page
-  if (session && pathname === "/login") {
+  // Redirect authenticated users away from the login page
+  if (user && pathname === "/login") {
     return NextResponse.redirect(new URL("/dashboard", request.url))
   }
 
