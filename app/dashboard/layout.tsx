@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Bell } from "lucide-react"
 import { useUser } from "@clerk/nextjs"
-import { AppProvider } from "../AppContext"
 
 const Header = () => {
   const { user } = useUser();
