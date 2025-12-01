@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { Edit, User, Mail, Phone, MapPin, Save, X, Heart, TrendingUp, Loader2 } from "lucide-react"
+import { useState } from "react"
+import { Edit, Mail, Phone, Save, X, Heart, TrendingUp, Loader2 } from "lucide-react"
 import { toast } from "sonner"
-import { useSupabase } from "@/lib/supabase/provider"
+import { useUser } from "@clerk/nextjs"
 
 type Profile = {
   id: string
@@ -17,90 +17,38 @@ type Profile = {
 }
 
 export default function ProfilePage() {
-  const { session } = useSupabase()
-  const [isMounted, setIsMounted] = useState(false)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [isLoadingData, setIsLoadingData] = useState(true)
+  const { user } = useUser()
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [isUpdating, setIsUpdating] = useState(false)
+  const isUpdating = false
 
   const [editForm, setEditForm] = useState({
     name: "",
     phone: "",
   })
 
-  const fetchProfile = useCallback(async () => {
-    setIsLoadingData(true)
-    try {
-      const response = await fetch("/api/profile")
-      if (!response.ok) {
-        throw new Error("Failed to fetch profile")
-      }
-      const data = await response.json()
-      setProfile(data)
-      setEditForm({
-        name: data.name || "",
-        phone: data.phone || "",
-      })
-    } catch (error) {
-      toast.error("Could not load your profile. Please try again later.")
-    } finally {
-      setIsLoadingData(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    setIsMounted(true)
-    if (session) {
-      fetchProfile()
-    } else {
-      setIsLoadingData(false)
-    }
-  }, [session, fetchProfile])
-
   const handleUpdateProfile = async () => {
-    setIsUpdating(true)
-    const formData = new FormData()
-    formData.append("name", editForm.name)
-    formData.append("phone", editForm.phone)
+    // Stub
+    toast.info("Profile update not implemented yet.");
+    setIsEditModalOpen(false);
+  }
 
-    try {
-      const response = await fetch("/api/profile", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to update profile")
+  // Construct fake profile from Clerk user for now
+  const profile: Profile | null = user ? {
+      id: user.id,
+      name: user.fullName,
+      phone: user.primaryPhoneNumber?.phoneNumber || null,
+      email: user.primaryEmailAddress?.emailAddress || null,
+      stats: {
+          donations: 0,
+          livesSaved: 0
       }
+  } : null;
 
-      toast.success("Profile updated successfully!")
-      await fetchProfile() // Re-fetch profile to show updated data
-      setIsEditModalOpen(false)
-
-    } catch (error) {
-      toast.error("Could not update your profile. Please try again.")
-    } finally {
-      setIsUpdating(false)
-    }
-  }
-
-  if (!isMounted || isLoadingData) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-red-500"></div>
-      </div>
-    )
-  }
 
   if (!profile) {
     return (
         <div className="flex flex-col justify-center items-center h-screen bg-gray-50 text-center">
-            <h2 className="text-xl font-semibold text-gray-700">Could not load profile</h2>
-            <p className="text-gray-500 mb-4">There was an issue fetching your data.</p>
-            <button onClick={fetchProfile} className="px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600">
-                Try Again
-            </button>
+            <h2 className="text-xl font-semibold text-gray-700">Loading profile...</h2>
         </div>
     )
   }
@@ -112,13 +60,13 @@ export default function ProfilePage() {
           <div className="flex flex-col items-center sm:flex-row sm:items-start text-center sm:text-left">
             <div className="relative mb-4 sm:mb-0 sm:mr-6">
               <img
-                src={`https://ui-avatars.com/api/?name=${profile.name || profile.email}&background=e74c3c&color=fff&size=128`}
+                src={user?.imageUrl || `https://ui-avatars.com/api/?name=${profile.name || profile.email}&background=e74c3c&color=fff&size=128`}
                 alt="Profile"
                 className="w-32 h-32 rounded-full object-cover border-4 border-red-500"
               />
             </div>
             <div className="flex-grow">
-              <h1 className="text-3xl font-bold text-gray-800">{profile.name || "Update Your Name"}</h1>
+              <h1 className="text-3xl font-bold text-gray-800">{profile.name || "User"}</h1>
               <p className="text-gray-500">{profile.email}</p>
               <button
                 onClick={() => setIsEditModalOpen(true)}
