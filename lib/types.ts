@@ -38,4 +38,6 @@ export interface Request {
   distance?: number // Calculated on client
 }
 
+export type BloodRequest = Request;
+
 export type ViewType = "onboarding" | "home" | "requests" | "donate" | "hospital" | "profile" | "stories"

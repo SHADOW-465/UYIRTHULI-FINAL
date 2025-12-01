@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import type { User } from "@/lib/types"
-import type { User } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
@@ -20,7 +19,8 @@ import {
 } from "@/components/ui/dialog"
 import { QrCode, Settings, Award, Droplet, Heart, Activity, Pill } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, XAxis, ResponsiveContainer, Tooltip } from "recharts"
-import { useMutation } from "convex/react"
+import { useMutation, useQuery } from "convex/react"
+import { Id } from "@/convex/_generated/dataModel"
 import { api } from "@/convex/_generated/api"
 import { toast } from "sonner"
 
@@ -44,7 +44,7 @@ export function ProfileView({ user }: ProfileViewProps) {
   const handleUpdate = async () => {
     try {
       await updateUser({
-        id: user._id,
+        id: user._id as Id<"users">,
         age: Number(formData.age),
         bloodType: formData.bloodType,
         abhaId: formData.abhaId,
