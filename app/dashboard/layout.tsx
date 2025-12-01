@@ -2,17 +2,19 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Bell, User } from "lucide-react"
-import { useSupabase } from "@/lib/supabase/provider"
+import { Bell } from "lucide-react"
+import { useUser } from "@clerk/nextjs"
+import { AppProvider } from "../AppContext"
 
 const Header = () => {
-  const { session } = useSupabase()
-  const user = session?.user
+  const { user } = useUser();
   const [userName, setUserName] = useState("User")
 
   useEffect(() => {
-    if (user?.email) {
-      setUserName(user.email.split('@')[0])
+    if (user?.fullName) {
+        setUserName(user.fullName);
+    } else if (user?.primaryEmailAddress?.emailAddress) {
+      setUserName(user.primaryEmailAddress.emailAddress.split('@')[0])
     }
   }, [user])
 
@@ -35,11 +37,11 @@ const Header = () => {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <AppProvider>
       <Header />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {children}
       </div>
-    </>
+    </AppProvider>
   )
 }

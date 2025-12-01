@@ -1,45 +1,36 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { NButton, NCard, NModal, NField, NBadge, NAlert, NList, NListItem, NProgress } from "@/components/nui"
-import { getSupabaseBrowserClient } from "@/lib/supabase/client"
-import { Calendar, MapPin, Clock, Cloud, Users, Bell, CheckCircle } from "lucide-react"
-import { User as SupabaseUser } from "@supabase/supabase-js"
-import { format, addDays, isAfter, isBefore } from "date-fns"
+import { useState } from "react"
+import { NButton, NCard, NModal, NField, NBadge, NAlert, NList, NListItem } from "@/components/nui"
+import { Calendar, MapPin, Clock, Users, Bell } from "lucide-react"
+import { format, addDays } from "date-fns"
+import { useQuery, useMutation } from "convex/react"
+import { api } from "@/convex/_generated/api"
+import { useUser } from "@clerk/nextjs"
 
+// Stub types for Convex
 type Hospital = {
   id: string
   name: string
-  location_lat: number
-  location_lng: number
-  contact_phone: string
-  current_wait_time?: number
-  queue_length?: number
-}
-
-type WeatherAlert = {
-  id: string
-  alert_type: string
-  severity: string
-  message: string
-  start_time: string
-  end_time: string
+  locationLat: number
+  locationLng: number
+  contactPhone: string
+  currentWaitTime?: number
+  queueLength?: number
 }
 
 type ScheduledDonation = {
   id: string
-  scheduled_date: string
+  scheduledDate: string
   location: string
   status: string
-  reminder_sent: boolean
   notes: string | null
 }
 
 export default function SchedulePage() {
-  const supabase = getSupabaseBrowserClient()
-  const [user, setUser] = useState<SupabaseUser | null>(null)
+  const { user } = useUser();
+  // Placeholder data until we have Convex tables for hospitals/alerts/calendar
   const [hospitals, setHospitals] = useState<Hospital[]>([])
-  const [weatherAlerts, setWeatherAlerts] = useState<WeatherAlert[]>([])
   const [scheduledDonations, setScheduledDonations] = useState<ScheduledDonation[]>([])
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -49,70 +40,7 @@ export default function SchedulePage() {
     hospital_id: "",
     notes: ""
   })
-  const [selectedDate, setSelectedDate] = useState(new Date())
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
-
-  useEffect(() => {
-    const getUserData = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      if (session) {
-        setUser(session.user)
-        await loadData(session.user.id)
-      }
-    }
-    getUserData()
-  }, [supabase])
-
-  const loadData = async (userId: string) => {
-    await Promise.all([
-      loadHospitals(),
-      loadWeatherAlerts(),
-      loadScheduledDonations(userId)
-    ])
-  }
-
-  const loadHospitals = async () => {
-    const { data, error } = await supabase
-      .from("hospitals")
-      .select("*")
-      .order("name")
-
-    if (data) {
-      // Simulate current wait times and queue lengths
-      const hospitalsWithData = data.map(hospital => ({
-        ...hospital,
-        current_wait_time: Math.floor(Math.random() * 60) + 15, // 15-75 minutes
-        queue_length: Math.floor(Math.random() * 10) + 1 // 1-10 people
-      }))
-      setHospitals(hospitalsWithData)
-    }
-  }
-
-  const loadWeatherAlerts = async () => {
-    const { data, error } = await supabase
-      .from("weather_alerts")
-      .select("*")
-      .gte("end_time", new Date().toISOString())
-      .order("severity", { ascending: false })
-
-    if (data) {
-      setWeatherAlerts(data)
-    }
-  }
-
-  const loadScheduledDonations = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("donation_calendar")
-      .select("*")
-      .eq("donor_id", userId)
-      .order("scheduled_date", { ascending: true })
-
-    if (data) {
-      setScheduledDonations(data)
-    }
-  }
 
   const generateAvailableSlots = (date: Date) => {
     const slots = []
@@ -130,61 +58,12 @@ export default function SchedulePage() {
   }
 
   const handleScheduleDonation = async () => {
-    if (!user || !scheduleForm.date || !scheduleForm.time || !scheduleForm.hospital_id) return
-    
-    setLoading(true)
-    try {
-      const selectedHospital = hospitals.find(h => h.id === scheduleForm.hospital_id)
-      const scheduledDateTime = new Date(`${scheduleForm.date}T${scheduleForm.time}`)
-      
-      const { error } = await supabase
-        .from("donation_calendar")
-        .insert({
-          donor_id: user.id,
-          scheduled_date: scheduleForm.date,
-          location: selectedHospital?.name,
-          notes: scheduleForm.notes,
-          status: 'scheduled'
-        })
-
-      if (!error) {
-        await loadScheduledDonations(user.id)
-        setIsScheduleModalOpen(false)
-        setScheduleForm({
-          date: "",
-          time: "",
-          hospital_id: "",
-          notes: ""
-        })
-        
-        // Send notification
-        await supabase
-          .from("notifications")
-          .insert({
-            user_id: user.id,
-            type: "appointment_reminder",
-            title: "Donation Scheduled",
-            message: `Your blood donation is scheduled for ${format(scheduledDateTime, "MMM dd, yyyy 'at' h:mm a")} at ${selectedHospital?.name}`,
-            data: {
-              appointment_id: scheduledDateTime.toISOString(),
-              hospital_name: selectedHospital?.name
-            }
-          })
-      }
-    } catch (error) {
-      console.error("Error scheduling donation:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'extreme': return 'error'
-      case 'high': return 'warning'
-      case 'medium': return 'info'
-      default: return 'default'
-    }
+      // Stub
+      setLoading(true);
+      setTimeout(() => {
+          setLoading(false);
+          setIsScheduleModalOpen(false);
+      }, 500);
   }
 
   const getStatusColor = (status: string) => {
@@ -197,13 +76,6 @@ export default function SchedulePage() {
     }
   }
 
-  const isDateAvailable = (date: Date) => {
-    const today = new Date()
-    const maxDate = addDays(today, 90) // 3 months ahead
-    
-    return isAfter(date, today) && isBefore(date, maxDate)
-  }
-
   return (
     <div className="min-h-screen bg-slate-50 p-6">
       <div className="mx-auto max-w-6xl">
@@ -211,31 +83,6 @@ export default function SchedulePage() {
           <h1 className="text-3xl font-bold text-[#e74c3c] mb-2">Schedule Donation</h1>
           <p className="text-gray-600">Book your next blood donation appointment</p>
         </div>
-
-        {/* Weather Alerts */}
-        {weatherAlerts.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <Cloud className="w-5 h-5" />
-              Weather Alerts
-            </h2>
-            <div className="space-y-3">
-              {weatherAlerts.map((alert) => (
-                <NAlert key={alert.id} type={getSeverityColor(alert.severity)}>
-                  <div className="flex items-start gap-3">
-                    <Cloud className="w-5 h-5 mt-0.5" />
-                    <div>
-                      <div className="font-medium">{alert.message}</div>
-                      <div className="text-sm opacity-75">
-                        {format(new Date(alert.start_time), "MMM dd")} - {format(new Date(alert.end_time), "MMM dd, yyyy")}
-                      </div>
-                    </div>
-                  </div>
-                </NAlert>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Available Hospitals */}
@@ -245,37 +92,41 @@ export default function SchedulePage() {
                 <MapPin className="w-5 h-5" />
                 Available Locations
               </h2>
-              <div className="grid gap-4">
-                {hospitals.map((hospital) => (
-                  <div key={hospital.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="font-medium">{hospital.name}</h3>
-                        <p className="text-sm text-gray-600">{hospital.contact_phone}</p>
+               {hospitals.length === 0 ? (
+                  <p className="text-gray-500">No hospitals available at the moment.</p>
+               ) : (
+                  <div className="grid gap-4">
+                    {hospitals.map((hospital) => (
+                      <div key={hospital.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h3 className="font-medium">{hospital.name}</h3>
+                            <p className="text-sm text-gray-600">{hospital.contactPhone}</p>
+                          </div>
+                          <NButton
+                            onClick={() => {
+                              setScheduleForm({ ...scheduleForm, hospital_id: hospital.id })
+                              setIsScheduleModalOpen(true)
+                            }}
+                            size="sm"
+                          >
+                            Schedule
+                          </NButton>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            {hospital.currentWaitTime} min wait
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Users className="w-4 h-4" />
+                            {hospital.queueLength} in queue
+                          </div>
+                        </div>
                       </div>
-                      <NButton
-                        onClick={() => {
-                          setScheduleForm({ ...scheduleForm, hospital_id: hospital.id })
-                          setIsScheduleModalOpen(true)
-                        }}
-                        size="sm"
-                      >
-                        Schedule
-                      </NButton>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {hospital.current_wait_time} min wait
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        {hospital.queue_length} in queue
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+               )}
             </NCard>
           </div>
 
@@ -293,7 +144,7 @@ export default function SchedulePage() {
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="font-medium">
-                            {format(new Date(donation.scheduled_date), "MMM dd, yyyy")}
+                            {format(new Date(donation.scheduledDate), "MMM dd, yyyy")}
                           </div>
                           {donation.location && (
                             <div className="text-sm text-gray-600 flex items-center gap-1">
