@@ -92,8 +92,8 @@ function RequestCard({
   request: BloodRequest
   onAccept: () => void
 }) {
-  const isUrgent = request.urgency === "urgent" || request.urgency === "critical"
-  const isPledged = request.status === "pledged"
+  const isUrgent = request.urgency === "Urgent" || request.urgency === "Critical"
+  const isPledged = request.status === "Pledged"
 
   return (
     <Card
@@ -126,7 +126,7 @@ function RequestCard({
           </div>
           <div className="flex items-center gap-1.5">
             <Clock className="size-4" />
-            <span>{request.postedTime}</span>
+            <span>{new Date(request.createdAt).toLocaleDateString()}</span>
           </div>
         </div>
 
@@ -191,7 +191,7 @@ function BloodJourney({
                 <h2 className="text-2xl font-bold">{request.hospitalName}</h2>
                 <p className="text-slate-400 flex items-center gap-2 mt-1">
                   <MapPin className="size-4" />
-                  {request.location}
+                  {request.location.lat.toFixed(4)}, {request.location.lon.toFixed(4)}
                 </p>
               </div>
               <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm">
