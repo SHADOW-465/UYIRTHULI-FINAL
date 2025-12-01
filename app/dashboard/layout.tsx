@@ -2,17 +2,18 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Bell, User } from "lucide-react"
-import { useSupabase } from "@/lib/supabase/provider"
+import { Bell } from "lucide-react"
+import { useUser } from "@clerk/nextjs"
 
 const Header = () => {
-  const { session } = useSupabase()
-  const user = session?.user
+  const { user } = useUser();
   const [userName, setUserName] = useState("User")
 
   useEffect(() => {
-    if (user?.email) {
-      setUserName(user.email.split('@')[0])
+    if (user?.fullName) {
+        setUserName(user.fullName);
+    } else if (user?.primaryEmailAddress?.emailAddress) {
+      setUserName(user.primaryEmailAddress.emailAddress.split('@')[0])
     }
   }, [user])
 
